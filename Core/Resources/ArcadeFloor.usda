@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+# The arcade room's floor (Cab.swift): the carpet tile repeated across it,
+# times the light baked from the room's neon, which also fades it to black at
+# the edge (model/export_arcade_room.py). Unlit: the bake is its lighting.
+# UVs run 0..1 across the floor; Tiles is how many carpet tiles that spans.
+def Xform "Root"
+{
+    def Material "ArcadeFloor"
+    {
+        asset inputs:Carpet = @@
+        asset inputs:Light = @@
+        float inputs:Tiles = 9
+        token outputs:mtlx:surface.connect = </Root/ArcadeFloor/Unlit.outputs:out>
+        token outputs:realitykit:vertex
+
+        def Shader "Unlit"
+        {
+            uniform token info:id = "ND_realitykit_unlit_surfaceshader"
+            color3f inputs:color.connect = </Root/ArcadeFloor/Lit.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "UV"
+        {
+            uniform token info:id = "ND_texcoord_vector2"
+            float2 outputs:out
+        }
+
+        def Shader "CarpetUV"
+        {
+            uniform token info:id = "ND_multiply_vector2FA"
+            float2 inputs:in1.connect = </Root/ArcadeFloor/UV.outputs:out>
+            float inputs:in2.connect = </Root/ArcadeFloor.inputs:Tiles>
+            float2 outputs:out
+        }
+
+        def Shader "Carpet"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file.connect = </Root/ArcadeFloor.inputs:Carpet>
+            float2 inputs:texcoord.connect = </Root/ArcadeFloor/CarpetUV.outputs:out>
+            string inputs:uaddressmode = "periodic"
+            string inputs:vaddressmode = "periodic"
+            color3f outputs:out
+        }
+
+        def Shader "Light"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file.connect = </Root/ArcadeFloor.inputs:Light>
+            float2 inputs:texcoord.connect = </Root/ArcadeFloor/UV.outputs:out>
+            string inputs:uaddressmode = "clamp"
+            string inputs:vaddressmode = "clamp"
+            color3f outputs:out
+        }
+
+        def Shader "Lit"
+        {
+            uniform token info:id = "ND_multiply_color3"
+            color3f inputs:in1.connect = </Root/ArcadeFloor/Carpet.outputs:out>
+            color3f inputs:in2.connect = </Root/ArcadeFloor/Light.outputs:out>
+            color3f outputs:out
+        }
+    }
+}

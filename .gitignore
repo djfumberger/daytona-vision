@@ -1,0 +1,16 @@
+# Build output and per-user Xcode state
+build/
+xcuserdata/
+.DS_Store
+# Never commit game data
+*.zip
+*.7z
+# Blender backups and Python caches
+*.blend1
+__pycache__/
+# Cab sources (Blender project, artwork); only Core/Resources/Cab.usdz is published
+model/
+# Your signing team and ROM set (Config/Base.xcconfig)
+Config/Local.xcconfig
+# Written by the game: made by scripts/make_default_eeprom.sh
+Core/Resources/default_eeprom.bin

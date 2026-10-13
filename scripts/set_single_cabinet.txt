@@ -1,0 +1,38 @@
+# Daytona USA Revision A (daytona): factory settings (LINK ID MASTER, CABINET
+# TWIN, COUNTRY JPN: waits on NETWORK CHECKING) -> LINK ID SINGLE, CABINET
+# DELUXE, COUNTRY USA (English text).
+# From the factory EEPROM, for upstream's m2run:
+#   m2run build-daytona/rom_cache/daytona 3000 --inputs set_single_cabinet.txt --save-nvram DIR
+# Test menu keys: red (vr1) cursor down, green (vr4) cursor up,
+# yellow (vr3) mode up, start selects.
+frames 3000
+# enter test mode (cursor starts on EXIT)
+1200-1209 test=1
+# EXIT -> BOOKKEEPING -> GAME SYSTEM, select (cursor starts on EXIT)
+1600-1605 vr1=1
+1640-1645 vr1=1
+1700-1705 start=1
+# LINK ID: MASTER -> SLAVE -> SINGLE
+1900-1905 vr1=1
+1960-1965 vr3=1
+2020-2025 vr3=1
+# down to CABINET: TWIN -> UPLIGHT -> DELUXE
+2080-2085 vr1=1
+2120-2125 vr1=1
+2180-2185 vr3=1
+2240-2245 vr3=1
+# down to COUNTRY: JPN -> EXPORT -> USA
+2300-2305 vr1=1
+2360-2365 vr3=1
+2420-2425 vr3=1
+# down to EXIT (difficulty, sound, mode, arrow, exit), select
+2480-2485 vr1=1
+2520-2525 vr1=1
+2560-2565 vr1=1
+2600-2605 vr1=1
+2640-2645 vr1=1
+2700-2705 start=1
+# test menu: GAME SYSTEM -> BOOKKEEPING -> EXIT, select
+2800-2805 vr4=1
+2840-2845 vr4=1
+2900-2905 start=1

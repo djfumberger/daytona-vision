@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+# The game screen in stereo (ScreenTexture, stereo): both eyes in one
+# texture, the left on top. Each eye sees its own half; anything that is
+# not an eye (a mono view) sees the left. Unlit, as the mono screen.
+def Xform "Root"
+{
+    def Material "StereoScreen"
+    {
+        asset inputs:Screen = @@
+        token outputs:mtlx:surface.connect = </Root/StereoScreen/Unlit.outputs:out>
+        token outputs:realitykit:vertex
+
+        def Shader "Unlit"
+        {
+            uniform token info:id = "ND_realitykit_unlit_surfaceshader"
+            color3f inputs:color.connect = </Root/StereoScreen/Image.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file.connect = </Root/StereoScreen.inputs:Screen>
+            float2 inputs:texcoord.connect = </Root/StereoScreen/EyeUV.outputs:out>
+            string inputs:uaddressmode = "clamp"
+            string inputs:vaddressmode = "clamp"
+            color3f outputs:out
+        }
+
+        def Shader "UV"
+        {
+            uniform token info:id = "ND_texcoord_vector2"
+            float2 outputs:out
+        }
+
+        # v from 0..1 into one half: the bottom half (the right eye's) ...
+        def Shader "LowerHalf"
+        {
+            uniform token info:id = "ND_multiply_vector2"
+            float2 inputs:in1.connect = </Root/StereoScreen/UV.outputs:out>
+            float2 inputs:in2 = (1, 0.5)
+            float2 outputs:out
+        }
+
+        # ... or the top half (the left eye's).
+        def Shader "UpperHalf"
+        {
+            uniform token info:id = "ND_add_vector2"
+            float2 inputs:in1.connect = </Root/StereoScreen/LowerHalf.outputs:out>
+            float2 inputs:in2 = (0, 0.5)
+            float2 outputs:out
+        }
+
+        def Shader "EyeUV"
+        {
+            uniform token info:id = "ND_realitykit_geometry_switch_cameraindex_vector2"
+            float2 inputs:mono.connect = </Root/StereoScreen/UpperHalf.outputs:out>
+            float2 inputs:left.connect = </Root/StereoScreen/UpperHalf.outputs:out>
+            float2 inputs:right.connect = </Root/StereoScreen/LowerHalf.outputs:out>
+            float2 outputs:out
+        }
+    }
+}
