@@ -45,6 +45,7 @@
       "path": "DaytonaVision",
       "children": [
         { "path": "AppModel.swift", "target-membership": [ "DaytonaVision/compile-sources" ] },
+        { "path": "Assets.xcassets", "target-membership": [ "DaytonaVision/resources" ] },
         { "path": "Cab.swift", "target-membership": [ "DaytonaVision/compile-sources" ] },
         { "path": "CabAudio.swift", "target-membership": [ "DaytonaVision/compile-sources" ] },
         { "path": "CabImmersiveView.swift", "target-membership": [ "DaytonaVision/compile-sources" ] },
