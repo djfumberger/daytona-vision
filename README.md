@@ -13,17 +13,16 @@ take the wheel with your own hands, or a controller if you'd rather. Turn the
 lights down with the arcade room, or switch on 3D and watch the track run
 deep into the screen.
 
-The game itself comes from upstream; this port puts it in visionOS:
+The game itself comes from upstream (the `upstream/` submodule, used
+unmodified). This port adds:
 
-| From upstream (`upstream/` submodule, used unmodified) | Added by this port |
-| --- | --- |
-| The recompiled game, generated from your own ROM set | The sit-down cab, at full size in your room |
-| The GPU renderer (ported here to Metal) | The arcade room, with the lights turned down |
-| Widescreen: 16:10, 16:9 and 21:9 | 3D: the track drawn in depth on the screen |
-| | The CRT effect |
-| | Hand controls: the wheel, pinch gas and brake, the shifter, the cab's buttons |
-| | Sound from the cab's speakers; game controllers |
-| | Screen mode: a flat window, in any of upstream's shapes |
+- The sit-down cab, at full size in your room
+- The arcade room, with the lights turned down
+- 3D: the track drawn in depth on the screen
+- The CRT effect
+- Hand controls: the wheel, pinch gas and brake, the shifter, the cab's buttons
+- Sound from the cab's speakers; game controllers
+- Screen mode: a flat window, in any of upstream's shapes
 
 No game data is in this repository.
 
@@ -50,10 +49,10 @@ No game data is in this repository.
 
 5. Open `DaytonaVision.xcodeproj` (Xcode 27 or later) and run on the Vision
    Pro. After updating upstream, run its setup again and rebuild.
+6. In the app, choose your ROM set from Settings.
 
 Build it yourself from your own ROM set, and please don't share built apps:
 they contain code generated from the game.
-5. In the app, choose your ROM set from Settings.
 
 ## Playing
 
