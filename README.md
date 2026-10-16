@@ -2,7 +2,10 @@
 
 A visionOS port of [daytona-arcade-recomp](https://github.com/alphanu1/daytona-arcade-recomp).
 
-https://github.com/user-attachments/assets/f14820a3-acb5-4804-b396-4ca438be8a7d
+
+https://github.com/user-attachments/assets/6be2e0c3-d1e8-418d-8160-21dc1ba8ff47
+
+
 
 Climb into a full-size sit-down cab in your own room. The race glows on its
 CRT, the engine roars from the speakers either side of the marquee, and you
