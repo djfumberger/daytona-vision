@@ -193,7 +193,10 @@ final class CabStage {
         toolbar?.isEnabled = model.showToolbar || model.placing
         cab.animateRoom(dt: dt)
 
-        guard let session = model.session else { return }
+        guard let session = model.session else {
+            cab.setLamps(0)                         // no game running: the lamps are off
+            return
+        }
 
         if session !== audioSession {
             audio.start(session: session, left: cab.speakerL, right: cab.speakerR)
@@ -201,6 +204,7 @@ final class CabStage {
         }
 
         session.setInput(input.update(model: model, cab: cab, dt: dt))
+        cab.setLamps(session.lamps)
         updateStereo(cab: cab, session: session, model: model)
 
         if let screen {
@@ -427,7 +431,7 @@ final class CabStage {
         while let current = e { // the tap may land on a child of the named button
             if let id = Cab.buttonID(current.name), let button = buttons[id] {
                 model.tap(button)
-                pulse(current)
+                pulse(cab?.pressedPart(for: current) ?? current)
                 return
             }
             e = current.parent

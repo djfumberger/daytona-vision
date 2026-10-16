@@ -20,7 +20,7 @@ struct HelpView: View {
                      "Under the screen: reset the game, the screen's shape (the original or widescreen), this help, and settings. Close the window to go back to the start.")
             } else {
                 item("hand.raised", "Hands",
-                     "Grab the wheel's rim and turn it. Pinch your right thumb and index finger for gas, your left for brake.")
+                     "Grab the wheel's rim and turn it. Pinch your right thumb and index finger for gas, your left for brake. In Settings, Controls, choose each pedal's hand and finger (to drive one-handed, put both on one hand: index for gas, middle for brake), and Pinch (Variable) for the closer your fingers, the more pedal.")
                 item("gamecontroller", "Controller",
                      "Left stick steers, the triggers are gas and brake, the shoulders shift. A, B, X and Y are the view buttons; Options is a coin, Menu is Start.")
                 item("dollarsign.circle", "Starting a race",

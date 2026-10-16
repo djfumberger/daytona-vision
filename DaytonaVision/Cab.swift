@@ -46,6 +46,11 @@ final class Cab {
     /// The pedals' hinges, their rest orientations, and how far down each is (0...1, smoothed).
     private var pedals: [(pivot: Entity, rest: simd_quatf, travel: Float)] = []
 
+    /// The lamp buttons' caps: the game's lamp bit, the cap, its material (the
+    /// model's own, only its glow changed) and the colour it glows.
+    private var lamps: [(bit: UInt32, cap: ModelEntity, material: PhysicallyBasedMaterial, color: UIColor)] = []
+    private var lampBits: UInt32?
+
     private var eyePoint = SIMD3<Float>()
     private(set) var isCustom = false
 
@@ -65,6 +70,7 @@ final class Cab {
             buildPlaceholder()
         }
 
+        bindLamps()
         buildGripGlows()
         Self.makeTappable(screen, hover: false) // a pinch on the screen shows the toolbar
         footprint = rig.visualBounds(relativeTo: rig) // before any panels are attached
@@ -172,6 +178,43 @@ final class Cab {
             pedals[i].travel += (t - pedals[i].travel) * 0.35
             let press = simd_quatf(angle: -Self.pedalTravel * pedals[i].travel, axis: [1, 0, 0])
             pedals[i].pivot.orientation = pedals[i].rest * press
+        }
+    }
+
+    /// Lights the lamp buttons the game has on (DT_LAMP_* bits) and darkens
+    /// the rest. Materials are only touched when a lamp changes.
+    func setLamps(_ bits: UInt32) {
+        guard bits != lampBits else { return }
+        let changed = bits ^ (lampBits ?? ~bits)
+        lampBits = bits
+        for i in lamps.indices where changed & lamps[i].bit != 0 {
+            let on = bits & lamps[i].bit != 0
+            lamps[i].material.emissiveColor = .init(color: lamps[i].color)
+            lamps[i].material.emissiveIntensity = on ? Self.lampOn : Self.lampOff
+            lamps[i].cap.model?.materials = [lamps[i].material]
+        }
+    }
+
+    /// Lamp glow lit, and unlit (the cap's colour just showing through).
+    private static let lampOn: Float = 2.5
+    private static let lampOff: Float = 0.04
+
+    private func bindLamps() {
+        let bits: [(String, Int)] = [("start", Int(DT_LAMP_START)), ("view1", Int(DT_LAMP_VIEW1)),
+                                     ("view2", Int(DT_LAMP_VIEW2)), ("view3", Int(DT_LAMP_VIEW3)),
+                                     ("view4", Int(DT_LAMP_VIEW4))]
+        var caps: [String: ModelEntity] = [:]
+        rig.visit { entity in
+            // the cap is the button's mesh (not its housing, whose name doesn't parse)
+            if let id = Self.buttonID(entity.name), caps[id] == nil,
+               let cap = entity as? ModelEntity ?? entity.children.compactMap({ $0 as? ModelEntity }).first,
+               cap.model != nil {
+                caps[id] = cap
+            }
+        }
+        for (id, bit) in bits {
+            guard let cap = caps[id], let material = cap.model?.materials.first as? PhysicallyBasedMaterial else { continue }
+            lamps.append((UInt32(bit), cap, material, material.baseColor.tint))
         }
     }
 
@@ -987,6 +1030,22 @@ final class Cab {
         }
 
         return nil
+    }
+
+    /// The part that moves when a button is pressed: for the coin door, the
+    /// coin entry's lit insert (CoinEntry_<n>), not the bezel or door that was
+    /// tapped; the first entry when the door itself was. Otherwise the button.
+    func pressedPart(for button: Entity) -> Entity {
+        let n = button.name.lowercased()
+        let entry: String
+        if n.hasPrefix("coinentry_") {
+            entry = String(n.dropFirst("coinentry_".count).prefix { $0.isNumber })
+        } else if n == "coindoor" {
+            entry = "1"
+        } else {
+            return button
+        }
+        return rig.findEntity(named: "CoinEntry_\(entry)") ?? button
     }
 
     static func makeTappable(_ entity: Entity, hover: Bool = true) {

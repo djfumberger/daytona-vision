@@ -225,6 +225,11 @@ private:
     }
 };
 
+// The I/O board's output port in its dual-port RAM: the lamps and coin
+// counters (found by logging the game's writes, as byte 0x11 was for the
+// drive board; bits as in MAME's Daytona lamp_output_w).
+constexpr uint32_t kIoOutputs = 0x0f;
+
 struct DTGame {
     std::unique_ptr<rt::GameLoop> loop;
     std::string save_dir;
@@ -266,6 +271,7 @@ struct DTGame {
 
     std::atomic<double> fps{0};
     std::atomic<float> game_ms{0}, draw_ms{0}; // dt_frame_times
+    std::atomic<uint32_t> lamps{0};            // dt_lamps: the I/O output port after the last frame
 
     std::mutex error_mu;
     std::string error;
@@ -384,6 +390,8 @@ void DTGame::run() {
 
             const auto frame_start = Clock::now();
             loop->run_frame(to_arcade(d));
+            // the game can write 0 then the new value within a frame: read it settled
+            lamps.store(loop->board().io().read(kIoOutputs), std::memory_order_relaxed);
             pump_audio();
             const auto ran = Clock::now();
 
@@ -545,6 +553,8 @@ void dt_audio_read(DTGame *game, int channel, float *out, int frames) {
 }
 
 double dt_fps(DTGame *game) { return game->fps.load(); }
+
+uint32_t dt_lamps(DTGame *game) { return game->lamps.load(std::memory_order_relaxed); }
 
 void dt_frame_times(DTGame *game, float *game_ms, float *draw_ms) {
     *game_ms = game->game_ms.load();

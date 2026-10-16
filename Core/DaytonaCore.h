@@ -93,6 +93,16 @@ double dt_fps(DTGame *game);
 // drawing it (the GPU renderer's frame, or publishing the CPU's).
 void dt_frame_times(DTGame *game, float *game_ms, float *draw_ms);
 
+// The cabinet's lamps as the game last set them: the I/O board's output port
+// (dual-port RAM byte 0x0F, MAME's Daytona layout), read after each frame.
+enum {
+    DT_COIN_COUNTER1 = 1u << 0, DT_COIN_COUNTER2 = 1u << 1,
+    DT_LAMP_START = 1u << 2,
+    DT_LAMP_VIEW1 = 1u << 3, DT_LAMP_VIEW2 = 1u << 4, DT_LAMP_VIEW3 = 1u << 5, DT_LAMP_VIEW4 = 1u << 6,
+    DT_LAMP_LEADER = 1u << 7,
+};
+uint32_t dt_lamps(DTGame *game);
+
 // Non-empty when the game thread stopped on an error.
 bool dt_error(DTGame *game, char *error, int error_len);
 

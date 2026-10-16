@@ -95,6 +95,9 @@ final class GameSession: @unchecked Sendable {
 
     var fps: Double { dt_fps(game) }
 
+    /// The cabinet's lamps as the game last set them (DT_LAMP_* bits).
+    var lamps: UInt32 { dt_lamps(game) }
+
     /// Milliseconds a frame takes on the game thread (smoothed): running the
     /// game, and drawing it.
     var frameTimes: (game: Float, draw: Float) {

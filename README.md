@@ -10,8 +10,19 @@ take the wheel with your own hands, or a controller if you'd rather. Turn the
 lights down with the arcade room, or switch on 3D and watch the track run
 deep into the screen.
 
-Upstream is the `upstream/` submodule, used unmodified. No game data is in this
-repository: the game code is generated from your own ROM set.
+The game itself comes from upstream; this port puts it in visionOS:
+
+| From upstream (`upstream/` submodule, used unmodified) | Added by this port |
+| --- | --- |
+| The recompiled game, generated from your own ROM set | The sit-down cab, at full size in your room |
+| The GPU renderer (ported here to Metal) | The arcade room, with the lights turned down |
+| Widescreen: 16:10, 16:9 and 21:9 | 3D: the track drawn in depth on the screen |
+| | The CRT effect |
+| | Hand controls: the wheel, pinch gas and brake, the shifter, the cab's buttons |
+| | Sound from the cab's speakers; game controllers |
+| | Screen mode: a flat window, in any of upstream's shapes |
+
+No game data is in this repository.
 
 ## Build
 
@@ -44,7 +55,9 @@ they contain code generated from the game.
 ## Playing
 
 - **Hands:** grab the wheel's rim and turn. Pinch your right hand for gas, your
-  left for brake; harder pinch, more pedal.
+  left for brake. In Settings each pedal has its own hand and finger (index or
+  middle, so one hand can do both while the other steers), and Pinch
+  (Variable) makes it gradual: the closer your thumb and finger, the more pedal.
 - **Controller:** left stick steers, triggers are gas and brake, shoulders
   shift, A B X Y are the VIEW buttons, Menu is Start, Options is Coin.
 - **Cab:** tap the coin slot, then START on the dash.

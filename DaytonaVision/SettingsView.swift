@@ -18,6 +18,25 @@ struct SettingsView: View {
     /// help (the screen window's toolbar has it).
     private var onScreen: Bool { model.screenOpen }
 
+    /// A pedal's setting on one line: "Pinch (Constant), Left Index".
+    private func pedalSummary(_ style: AppModel.PedalStyle, _ hand: AppModel.Hand, _ finger: AppModel.Finger) -> String {
+        style == .auto ? style.label : "\(style.label), \(hand.label) \(finger.label)"
+    }
+
+    /// What the pedal settings come to, in a sentence.
+    private var pedalsFooter: String {
+        func pinch(_ hand: AppModel.Hand, _ finger: AppModel.Finger) -> String {
+            "\(hand.label.lowercased()) thumb to \(finger.label.lowercased()) finger"
+        }
+        let brake = "Brake: \(pinch(model.brakeHand, model.brakeFinger))."
+        guard model.gasStyle != .auto else { return "Gas is always on, less the brake. " + brake }
+        var text = "Gas: \(pinch(model.gasHand, model.gasFinger)). " + brake
+        if model.pedalsShareHand {
+            text += " On one hand, the finger closer to the thumb works its pedal; steer with the \(model.gasHand.other.label.lowercased()) hand."
+        }
+        return text
+    }
+
     var body: some View {
         @Bindable var model = model
 
@@ -67,15 +86,26 @@ struct SettingsView: View {
                     }
 
                 case .controls:
-                    Section {
-                        if onScreen {
+                    if onScreen {
+                        Section {
                             Toggle("Auto gas", isOn: $model.autoGas)
-                        } else {
-                            Picker("Gas", selection: $model.autoGas) {
-                                Text("Pinch").tag(false)
-                                Text("Auto").tag(true)
+                        }
+                    } else {
+                        Section {
+                            NavigationLink {
+                                PedalSettingsView(title: "Gas", styles: AppModel.PedalStyle.allCases,
+                                                  style: $model.gasStyle, hand: $model.gasHand, finger: $model.gasFinger)
+                            } label: {
+                                LabeledContent("Gas", value: pedalSummary(model.gasStyle, model.gasHand, model.gasFinger))
                             }
-                            .pickerStyle(.menu)
+                            NavigationLink {
+                                PedalSettingsView(title: "Brake", styles: AppModel.PedalStyle.allCases.filter { $0 != .auto },
+                                                  style: $model.brakeStyle, hand: $model.brakeHand, finger: $model.brakeFinger)
+                            } label: {
+                                LabeledContent("Brake", value: pedalSummary(model.brakeStyle, model.brakeHand, model.brakeFinger))
+                            }
+                        } footer: {
+                            Text(pedalsFooter)
                         }
                     }
 
@@ -191,5 +221,42 @@ struct RomSettingsView: View {
                 .foregroundStyle(.secondary)
             Button("Choose ROM set…") { picking = true }
         }
+    }
+}
+
+/// A pedal's settings, pushed from Controls: how it works, and the hand and
+/// finger that pinch it (not for Auto), each a list to pick from.
+private struct PedalSettingsView: View {
+    let title: String
+    let styles: [AppModel.PedalStyle]
+    @Binding var style: AppModel.PedalStyle
+    @Binding var hand: AppModel.Hand
+    @Binding var finger: AppModel.Finger
+
+    var body: some View {
+        Form {
+            Section {
+                Picker(title, selection: $style) {
+                    ForEach(styles, id: \.self) { Text($0.label).tag($0) }
+                }
+            } footer: {
+                Text("Constant: a pinch is all the pedal or none. Variable: the closer your thumb and finger, the more pedal.")
+            }
+            if style != .auto {
+                Section("Hand") {
+                    Picker("Hand", selection: $hand) {
+                        ForEach(AppModel.Hand.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                }
+                Section("Finger") {
+                    Picker("Finger", selection: $finger) {
+                        ForEach(AppModel.Finger.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                }
+            }
+        }
+        .pickerStyle(.inline)
+        .labelsHidden()
+        .navigationTitle(title)
     }
 }

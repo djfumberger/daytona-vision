@@ -72,7 +72,77 @@ final class AppModel {
 
     // Player settings
     var gear: Int32 = 1
-    var autoGas = false
+
+    // Pedals by hand: each a pinch of the thumb and a finger on a hand.
+
+    enum Hand: String, CaseIterable {
+        case left, right
+        var label: String { self == .left ? "Left" : "Right" }
+        var other: Hand { self == .left ? .right : .left }
+    }
+
+    enum Finger: String, CaseIterable {
+        case index, middle
+        var label: String { self == .index ? "Index" : "Middle" }
+    }
+
+    /// How a pinch works a pedal.
+    enum PedalStyle: String, CaseIterable {
+        /// All or nothing (Constant).
+        case pinch
+        /// The closer the thumb and finger, the more pedal (Variable).
+        case amount
+        /// Gas only: always on, less the brake.
+        case auto
+
+        var label: String {
+            switch self {
+            case .pinch: "Pinch (Constant)"
+            case .amount: "Pinch (Variable)"
+            case .auto: "Auto"
+            }
+        }
+    }
+
+    var gasStyle = UserDefaults.standard.string(forKey: "gasStyle").flatMap(PedalStyle.init) ?? .pinch {
+        didSet { UserDefaults.standard.set(gasStyle.rawValue, forKey: "gasStyle"); separatePedals(keeping: .gas) }
+    }
+    var gasHand = UserDefaults.standard.string(forKey: "gasHand").flatMap(Hand.init) ?? .right {
+        didSet { UserDefaults.standard.set(gasHand.rawValue, forKey: "gasHand"); separatePedals(keeping: .gas) }
+    }
+    var gasFinger = UserDefaults.standard.string(forKey: "gasFinger").flatMap(Finger.init) ?? .index {
+        didSet { UserDefaults.standard.set(gasFinger.rawValue, forKey: "gasFinger"); separatePedals(keeping: .gas) }
+    }
+    var brakeStyle = UserDefaults.standard.string(forKey: "brakeStyle").flatMap(PedalStyle.init) ?? .pinch {
+        didSet { UserDefaults.standard.set(brakeStyle.rawValue, forKey: "brakeStyle") }
+    }
+    var brakeHand = UserDefaults.standard.string(forKey: "brakeHand").flatMap(Hand.init) ?? .left {
+        didSet { UserDefaults.standard.set(brakeHand.rawValue, forKey: "brakeHand"); separatePedals(keeping: .brake) }
+    }
+    var brakeFinger = UserDefaults.standard.string(forKey: "brakeFinger").flatMap(Finger.init) ?? .index {
+        didSet { UserDefaults.standard.set(brakeFinger.rawValue, forKey: "brakeFinger"); separatePedals(keeping: .brake) }
+    }
+
+    /// The flat screen window's toggle: Auto, or back to a pinch.
+    var autoGas: Bool {
+        get { gasStyle == .auto }
+        set { gasStyle = newValue ? .auto : .pinch }
+    }
+
+    /// Gas and brake both pinched on one hand (each with its own finger).
+    var pedalsShareHand: Bool { gasStyle != .auto && gasHand == brakeHand }
+
+    private enum Pedal { case gas, brake }
+
+    /// Gas and brake can't be the same pinch: the one just changed stays, the
+    /// other moves to the other finger.
+    private func separatePedals(keeping pedal: Pedal) {
+        guard pedalsShareHand, gasFinger == brakeFinger else { return }
+        switch pedal {
+        case .gas: brakeFinger = gasFinger == .index ? .middle : .index
+        case .brake: gasFinger = brakeFinger == .index ? .middle : .index
+        }
+    }
 
     /// The screen's CRT look (CRT.metal) and glass, kept between launches.
     var crt = CRTSettings.load() { didSet { crt.save() } }

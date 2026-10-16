@@ -8,8 +8,10 @@ import simd
 /// Hands: grab the wheel's rim (a hand within reach of it) and turn. With both
 /// hands the wheel follows the line between them; with one, the hand's angle
 /// around the hub (frame by frame, see `steerWithHands`). Let go and the wheel
-/// springs back to centre. Pinch with the right hand for gas and the left for
-/// brake (harder pinch, more pedal).
+/// springs back to centre. Gas and brake are pinches, the thumb to a finger,
+/// by default the right index finger for gas and the left for brake (each
+/// pedal's hand and finger can be set): all or nothing (Constant), or (Variable) the
+/// closer the fingers, the more pedal.
 ///
 /// Controller: left stick steers, right/left trigger gas/brake, shoulders or
 /// D-pad up/down shift, A B X Y the four view buttons, Menu start, Options coin.
@@ -135,8 +137,9 @@ final class InputManager {
             let (left, right) = hands.latestAnchors
             let samples = [left, right].map { anchor in anchor.flatMap { Self.sample($0) } }
             handCount = steerWithHands(samples.map { $0?.palm }, cab: cab, lock: lock, dt: dt)
-            if let r = samples[1] { accel = max(accel, Self.pinchAmount(r.pinch)) }
-            if let l = samples[0] { brake = max(brake, Self.pinchAmount(l.pinch)) }
+            let pedals = pinchPedals(samples, model: model, dt: dt)
+            accel = max(accel, pedals.gas)
+            brake = max(brake, pedals.brake)
         } else {
             relax(dt: dt)
             // `-gripdemo` (no hand tracking, e.g. the simulator): show both grip glows.
@@ -204,7 +207,7 @@ final class InputManager {
 
     private struct HandSample {
         var palm: SIMD3<Float>
-        var pinch: Float // thumb tip to index tip, metres
+        var pinch: [Float] // thumb tip to the index and middle fingertips, metres
     }
 
     private static func sample(_ anchor: HandAnchor) -> HandSample? {
@@ -215,11 +218,55 @@ final class InputManager {
         }
 
         let palm = (world(.wrist) + world(.middleFingerKnuckle)) / 2
-        return HandSample(palm: palm, pinch: simd_distance(world(.thumbTip), world(.indexFingerTip)))
+        let thumb = world(.thumbTip)
+        return HandSample(palm: palm, pinch: [simd_distance(thumb, world(.indexFingerTip)),
+                                              simd_distance(thumb, world(.middleFingerTip))])
     }
 
-    private static func pinchAmount(_ distance: Float) -> Float {
-        max(0, min(1, (0.045 - distance) / 0.03)) // open at 4.5 cm, full at 1.5 cm
+    // MARK: Pinch pedals
+
+    /// A pinch as a switch: on closing to 2.5 cm, off again opening past
+    /// 3.5 cm (the gap keeps a pinch held near the edge from flickering).
+    private static let pinchOn: Float = 0.025, pinchOff: Float = 0.035
+
+    /// Pinch (Variable): no pedal with the thumb and index finger 8 cm apart (a
+    /// hand at rest), all of it at 1.5 cm (fingertips touching).
+    private static let pinchOpen: Float = 0.08, pinchClosed: Float = 0.015
+
+    /// How quickly a pedal follows the fingers (a time constant, seconds):
+    /// the tracked fingertips jitter by a few millimetres.
+    private static let pinchSmoothing: Float = 0.06
+
+    /// Each pedal's pinch held (switch) and its smoothed amount: [gas, brake].
+    private var pinchHeld = [false, false]
+    private var pinchLevel: [Float] = [0, 0]
+
+    /// The gas and brake from the hands' pinches ([left, right]; nil, not
+    /// tracked), each a thumb and finger on a hand as set. With both on one
+    /// hand, only the finger closer to the thumb counts: pinching one brings
+    /// the other near the thumb too.
+    private func pinchPedals(_ hands: [HandSample?], model: AppModel, dt: Float) -> (gas: Float, brake: Float) {
+        let pedals: [(style: AppModel.PedalStyle, hand: AppModel.Hand, finger: AppModel.Finger)] = [
+            (model.gasStyle, model.gasHand, model.gasFinger),
+            (model.brakeStyle, model.brakeHand, model.brakeFinger),
+        ]
+        var out: [Float] = [0, 0]
+        for (i, pedal) in pedals.enumerated() {
+            let finger = pedal.finger == .index ? 0 : 1
+            guard pedal.style != .auto, let hand = hands[pedal.hand == .left ? 0 : 1] else {
+                pinchHeld[i] = false
+                pinchLevel[i] = 0
+                continue
+            }
+            var d = hand.pinch[finger]
+            if model.pedalsShareHand && hand.pinch[1 - finger] < d { d = .infinity }
+
+            pinchHeld[i] = d < (pinchHeld[i] ? Self.pinchOff : Self.pinchOn)
+            let amount = max(0, min(1, (Self.pinchOpen - d) / (Self.pinchOpen - Self.pinchClosed)))
+            pinchLevel[i] += (amount - pinchLevel[i]) * min(1, dt / Self.pinchSmoothing)
+            out[i] = pedal.style == .amount ? pinchLevel[i] : (pinchHeld[i] ? 1 : 0)
+        }
+        return (gas: out[0], brake: out[1])
     }
 
     /// Updates the wheel from the hands on it; returns how many are on it.
